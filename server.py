@@ -2,6 +2,7 @@ from __future__ import division, print_function, unicode_literals
 import argparse
 import cv2
 import flask
+import numpy
 import random
 import threading
 import time
@@ -13,21 +14,20 @@ STREAM_FPS = 20
 cameras = [Camera(0), Camera(1)]
 app = flask.Flask(__name__)
 app.running = False
+app.config.from_object('config')
 
 @app.route('/')
 def index():
-    out = ''
-    for cam in cameras:
-        out += '<a href="%s">Camera %i</a><br>' % (flask.url_for('stream', id=cam.id), cam.id)
-    return out
+    return flask.render_template('index.html', cameras=cameras)
 
 @app.route('/stream/<int:id>')
 def stream(id):
-    return ('<a href="/">Home</a><br>') + \
-        ('<img src="/stream/raw/%i?_=%f">' % (id, time.time()))
+    return flask.render_template('stream.html', id=id, random=hash(random.random()))
 
-@app.route('/stream/raw/<int:id>')
-def raw_stream(id):
+@app.route('/stream/raw/<int:id>/<random>')
+def raw_stream(id, random='unused'):
+    # Based on http://blog.miguelgrinberg.com/post/video-streaming-with-flask
+    # The `random` parameter allows some browsers to make multiple requests to this route at once
     return flask.Response(raw_stream_gen(cameras[id]), mimetype='multipart/x-mixed-replace; boundary=--frame')
 
 def raw_stream_gen(camera):

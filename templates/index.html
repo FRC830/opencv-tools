@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="col-lg-4">
+  <h2>Cameras</h2>
+  <div class="list-group">
+    {% for cam in cameras %}
+    <a href="{{ url_for('stream', id=cam.id) }}" class="list-group-item">
+      Camera #{{cam.id}} ({{cam.width}}x{{cam.height}} @ {{cam.fps}} FPS)
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
