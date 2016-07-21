@@ -31,25 +31,23 @@ def raw_stream(id, random='unused'):
     return flask.Response(raw_stream_gen(cameras[id]), mimetype='multipart/x-mixed-replace; boundary=--frame')
 
 def raw_stream_gen(camera):
-    started = False
     while app.running:
         time.sleep(1 / STREAM_FPS)
-        if camera.image_ok:
-            started = True
+        if camera.image:
             img = camera.image
-            img = cv2.resize(img, (int(camera.width * 0.6), int(camera.height * 0.6)))
-            cv2.putText(img, time.strftime('%H:%M:%S'), (20, 20), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
-            _, buf = cv2.imencode('.jpeg', img)
-            yield (b'--frame\r\n' +
-                b'Content-Type: image/jpeg\r\n' +
-                b'Content-Length: ' + str(len(buf)).encode('utf-8') + b'\r\n' +
-                b'\r\n' +
-                bytes(bytearray(buf)) +
-                b'\r\n'
-            )
         else:
-            if started:
-                break
+            img = numpy.zeros((camera.height, camera.width, 3), numpy.uint8)
+        img = cv2.resize(img, (int(camera.width * 0.6), int(camera.height * 0.6)))
+        cv2.putText(img, time.strftime('%H:%M:%S'), (5, 20), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
+        cv2.putText(img, 'Camera not returning images', (5, 40), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
+        _, buf = cv2.imencode('.jpeg', img)
+        yield (b'--frame\r\n' +
+            b'Content-Type: image/jpeg\r\n' +
+            b'Content-Length: ' + str(len(buf)).encode('utf-8') + b'\r\n' +
+            b'\r\n' +
+            bytes(bytearray(buf)) +
+            b'\r\n'
+        )
 
 if __name__ == '__main__':
     app.running = True
