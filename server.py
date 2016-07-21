@@ -24,6 +24,7 @@ def index():
 def stream(id):
     return flask.render_template('stream.html', id=id, random=hash(random.random()))
 
+@app.route('/stream/raw/<int:id>')
 @app.route('/stream/raw/<int:id>/<random>')
 def raw_stream(id, random='unused'):
     # Based on http://blog.miguelgrinberg.com/post/video-streaming-with-flask
@@ -33,13 +34,14 @@ def raw_stream(id, random='unused'):
 def raw_stream_gen(camera):
     while app.running:
         time.sleep(1 / STREAM_FPS)
-        if camera.image:
+        if camera.image is not None:
             img = camera.image
         else:
             img = numpy.zeros((camera.height, camera.width, 3), numpy.uint8)
         img = cv2.resize(img, (int(camera.width * 0.6), int(camera.height * 0.6)))
         cv2.putText(img, time.strftime('%H:%M:%S'), (5, 20), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
-        cv2.putText(img, 'Camera not returning images', (5, 40), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
+        if not camera.image_ok:
+            cv2.putText(img, 'Camera not returning images', (5, 40), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
         _, buf = cv2.imencode('.jpeg', img)
         yield (b'--frame\r\n' +
             b'Content-Type: image/jpeg\r\n' +

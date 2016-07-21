@@ -41,7 +41,7 @@ class Camera(object):
 
         def __set__(self, camera, value):
             setattr(camera, '_' + self.name, value)
-            camera.cap_thread.cmd_queue.put(lambda cap: cap.set(self.cv_property_id, value))
+            camera.cap_thread.opt_queue.put((self.cv_property_id, value))
 
     fps = capture_property('fps', cv2.cv.CV_CAP_PROP_FPS)
     width = capture_property('width', cv2.cv.CV_CAP_PROP_FRAME_WIDTH)
@@ -52,13 +52,15 @@ class Camera(object):
         return getattr(self.cap_thread, attr)
 
 class CaptureThread(threading.Thread):
+    _read_lock = threading.Lock()
+
     def __init__(self, camera):
         super(CaptureThread, self).__init__()
         self.parent_thread = threading.current_thread()
         self.camera = camera
         self._running = False
         self.cap = cv2.VideoCapture(camera.id)
-        self.cmd_queue = queue.Queue()
+        self.opt_queue = queue.Queue()
 
         self.image_lock = threading.Lock()
         self._image = None
@@ -69,11 +71,12 @@ class CaptureThread(threading.Thread):
         while self._running:
             while True:
                 try:
-                    self.cmd_queue.get(block=False)(self.cap)
+                    self.cap.set(*self.opt_queue.get(block=False))
                 except queue.Empty:
                     break
 
-            self.image_ok, image = self.cap.read()
+            with self._read_lock:
+                self.image_ok, image = self.cap.read()
             if self.image_ok:
                 self.image = image
 
