@@ -12,7 +12,7 @@ from camera import Camera, fake_camera
 
 STREAM_FPS = 20
 
-cameras = {}
+cameras = {i: fake_camera for i in range(3)}
 
 app = flask.Flask(__name__)
 app.running = False
@@ -20,7 +20,7 @@ app.config.from_object('config')
 
 @app.route('/')
 def index():
-    return flask.render_template('index.html', cameras=cameras.values())
+    return flask.render_template('index.html', cameras=cameras)
 
 @app.route('/stream/<int:id>')
 def stream(id):
@@ -67,7 +67,7 @@ class ServerThread(threading.Thread):
 def main():
     ServerThread().start()
 
-    for i in range(3):
+    for i in cameras:
         cameras[i] = Camera(i)
 
     try:
