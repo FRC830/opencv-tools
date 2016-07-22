@@ -100,3 +100,11 @@ class CaptureThread(threading.Thread):
         with self.image_lock:
             self._image = image
 
+class _FakeCamera:
+    image = None
+    image_ok = False
+    fps = 0
+    width = 640
+    height = 480
+
+fake_camera = _FakeCamera()
