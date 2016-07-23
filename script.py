@@ -31,10 +31,10 @@ def _load_file(path):
             contents = f.read()
         try:
             code = compile(contents, path, 'exec')
+            env = {}
+            exec(code, env, env)
         except Exception as e:
             raise ScriptLoadError(e)
-        env = {}
-        exec(code, env, env)
         return env
     finally:
         sys.path = old_path
@@ -77,10 +77,12 @@ class Script(object):
 
     def can_trigger(self, event):
         """ Check whether the script has an event handler """
-        return hasattr(self._env.get('on_' + event, None), '__call__')
+        return self._env is not None and hasattr(self._env.get('on_' + event, None), '__call__')
 
     def trigger(self, event, *args, **kwargs):
         """ Trigger an event handler """
+        if self._env is None:
+            return
         key = 'on_' + event
         if key in self._env:
             try:
