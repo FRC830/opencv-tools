@@ -9,6 +9,7 @@ import threading
 import time
 
 from camera import Camera, fake_camera
+import script
 
 STREAM_FPS = 20
 
@@ -65,6 +66,12 @@ class ServerThread(threading.Thread):
         app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--script', help='Path to script')
+    args = parser.parse_args()
+    if args.script:
+        script.load(args.script)
+
     ServerThread().start()
 
     for i in cameras:

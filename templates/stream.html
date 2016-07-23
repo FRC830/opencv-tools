@@ -1,4 +1,4 @@
 {% extends "base.html" %}
 {% block content %}
-<img src="{{ url_for('raw_stream', id=id, random=random) }}">
+<img src="{{ url_for('raw_stream', id=id, random=random) }}" style="max-width:100%;">
 {% endblock %}

@@ -3,6 +3,8 @@ import cv2
 import threading
 import time
 
+import script
+
 try:
     # Python 3
     import queue
@@ -78,6 +80,15 @@ class CaptureThread(threading.Thread):
             with self._read_lock:
                 self.image_ok, image = self.cap.read()
             if self.image_ok:
+                try:
+                    if script.current_script:
+                        image_out = script.current_script.trigger('frame', image)
+                        if isinstance(image_out, type(image)):
+                            image = image_out
+                except script.ScriptError as e:
+                    import traceback
+                    print(e)
+                    print(e.traceback)
                 self.image = image
 
             time.sleep(1 / self.camera.fps)
