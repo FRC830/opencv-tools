@@ -45,6 +45,7 @@ class Script(object):
 
     def __init__(self, path):
         self._path = path
+        self._env = {}
         self.load()
 
     @property
@@ -68,8 +69,9 @@ class Script(object):
     def unload(self):
         if self._loaded:
             self.trigger('unload')
-            self._env = None
+            self._env = {}
             self._loaded = False
+    __del__ = unload
 
     def reload(self):
         self.unload()
@@ -77,12 +79,10 @@ class Script(object):
 
     def can_trigger(self, event):
         """ Check whether the script has an event handler """
-        return self._env is not None and hasattr(self._env.get('on_' + event, None), '__call__')
+        return hasattr(self._env.get('on_' + event, None), '__call__')
 
     def trigger(self, event, *args, **kwargs):
         """ Trigger an event handler """
-        if self._env is None:
-            return
         key = 'on_' + event
         if key in self._env:
             try:
@@ -90,7 +90,9 @@ class Script(object):
             except (Exception, SystemExit) as e:
                 raise ScriptError(e)
 
-    __del__ = unload
+    def get(self, key, default):
+        return self._env.get(key, default)
+    __getitem__ = get
 
 class ScriptWatchThread(threading.Thread):
     daemon = True
