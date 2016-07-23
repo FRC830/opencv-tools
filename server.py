@@ -9,6 +9,7 @@ import threading
 import time
 
 from camera import Camera, fake_camera
+import params
 import script
 
 STREAM_FPS = 20
@@ -25,7 +26,8 @@ def index():
 
 @app.route('/stream/<int:id>')
 def stream(id):
-    return flask.render_template('stream.html', id=id, random=hash(random.random()))
+    return flask.render_template('stream.html', id=id, random=hash(random.random()),
+        scripts=['params.js'])
 
 @app.route('/stream/raw/<int:id>')
 @app.route('/stream/raw/<int:id>/<random>')
@@ -58,6 +60,11 @@ def raw_stream_gen(id):
             bytes(bytearray(buf)) +
             b'\r\n'
         )
+
+@app.route('/params/edit', methods=['POST'])
+def params_edit():
+    params.params.update(flask.request.form.to_dict())
+    return ('', 204)
 
 class ServerThread(threading.Thread):
     daemon = True

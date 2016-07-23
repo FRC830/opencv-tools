@@ -1,5 +1,7 @@
 import cv2
 
+import params
+
 def on_frame(image):
     orig_image = image
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -11,8 +13,8 @@ def on_frame(image):
     for cont in contours:
         approx = cv2.approxPolyDP(cont, 0.01 * cv2.arcLength(cont, True), True)
         sides = len(approx)
-        cv2.drawContours(orig_image, [cont], 0, (255, 180, 255), -1)
         if sides > 4:
+            cv2.drawContours(orig_image, [cont], 0, (255, int(params.params.get('green', 100)), 255), -1)
             moments = cv2.moments(cont)
             if moments["m00"]:
                 centers.append((
