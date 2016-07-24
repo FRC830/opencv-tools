@@ -14,7 +14,7 @@ colors = {
 for i in colors:
     colors[i] = colors[i][::-1]
 
-def on_frame(image):
+def on_frame(image, camera):
     orig_image = image
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, image = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY_INV)
