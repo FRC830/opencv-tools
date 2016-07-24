@@ -1,5 +1,6 @@
 from __future__ import division, print_function, unicode_literals
 import cv2
+import os
 import threading
 import time
 
@@ -56,6 +57,9 @@ class Camera(object):
 class CaptureThread(threading.Thread):
     _read_lock = threading.Lock()
 
+    if 'STATIC_IMAGE' in os.environ:
+        static_image = cv2.imread(os.environ['STATIC_IMAGE'])
+
     def __init__(self, camera):
         super(CaptureThread, self).__init__()
         self.parent_thread = threading.current_thread()
@@ -78,7 +82,11 @@ class CaptureThread(threading.Thread):
                     break
 
             with self._read_lock:
-                self.image_ok, image = self.cap.read()
+                if getattr(self, 'static_image', None) is not None:
+                    image = cv2.resize(self.static_image, (self.camera.width, self.camera.height))
+                    self.image_ok = True
+                else:
+                    self.image_ok, image = self.cap.read()
             if self.image_ok:
                 try:
                     if script.current_script:
