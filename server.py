@@ -9,6 +9,8 @@ import threading
 import time
 
 from camera import Camera, fake_camera
+import params
+import script
 
 STREAM_FPS = 20
 
@@ -26,6 +28,7 @@ def index():
 def favicon_redirect():
     return flask.redirect(flask.url_for('static', filename='favicon.ico'))
 
+
 @app.route('/stream')
 def index_redirect():
     return flask.redirect(flask.url_for('index'))
@@ -33,7 +36,8 @@ def index_redirect():
 @app.route('/stream/<int:id>')
 def stream(id):
     return flask.render_template('stream.html', id=id, random=hash(random.random()),
-        title='Camera %i' % id)
+        title='Camera %i' % id,
+        scripts=['params.js'])
 
 @app.route('/stream/raw/<int:id>')
 @app.route('/stream/raw/<int:id>/<random>')
@@ -68,6 +72,7 @@ def raw_stream_gen(id):
             b'\r\n'
         )
 
+
 @app.route('/settings')
 def settings_list():
     return flask.render_template('index.html', cameras=cameras, next_view='settings', title='Camera Settings')
@@ -76,6 +81,13 @@ def settings_list():
 def settings(id):
     return flask.render_template('settings.html', id=id, title='Camera %i' % id)
 
+
+@app.route('/params/edit', methods=['POST'])
+def params_edit():
+    params.params.update(flask.request.form.to_dict())
+    return ('', 204)
+
+
 class ServerThread(threading.Thread):
     daemon = True
     def run(self):
@@ -83,6 +95,12 @@ class ServerThread(threading.Thread):
         app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--script', help='Path to script')
+    args = parser.parse_args()
+    if args.script:
+        script.load(args.script)
+
     ServerThread().start()
 
     for i in cameras:

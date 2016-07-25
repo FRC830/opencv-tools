@@ -1,4 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<img src="{{ url_for('raw_stream', id=id, random=random) }}">
+<div class="col-lg-4">
+  <img src="{{ url_for('raw_stream', id=id, random=random) }}" style="max-width:100%;">
+</div>
+<div class="col-lg-8">
+  <label for="green">Green</label>
+  <input id="green" type="range" max="255">
+</div>
 {% endblock %}
