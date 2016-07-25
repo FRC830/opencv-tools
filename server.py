@@ -20,11 +20,20 @@ app.config.from_object('config')
 
 @app.route('/')
 def index():
-    return flask.render_template('index.html', cameras=cameras)
+    return flask.render_template('index.html', cameras=cameras, next_view='stream')
+
+@app.route('/favicon.ico')
+def favicon_redirect():
+    return flask.redirect(flask.url_for('static', filename='favicon.ico'))
+
+@app.route('/stream')
+def index_redirect():
+    return flask.redirect(flask.url_for('index'))
 
 @app.route('/stream/<int:id>')
 def stream(id):
-    return flask.render_template('stream.html', id=id, random=hash(random.random()))
+    return flask.render_template('stream.html', id=id, random=hash(random.random()),
+        title='Camera %i' % id)
 
 @app.route('/stream/raw/<int:id>')
 @app.route('/stream/raw/<int:id>/<random>')
@@ -49,7 +58,8 @@ def raw_stream_gen(id):
             msg = 'Camera not initialized' if camera is fake_camera else 'Camera not returning images'
             cv2.putText(img, msg, (5, 40), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
         with encode_lock:
-            _, buf = cv2.imencode('.jpeg', img)
+            pass
+        _, buf = cv2.imencode('.jpeg', img)
         yield (b'--frame\r\n' +
             b'Content-Type: image/jpeg\r\n' +
             b'Content-Length: ' + str(len(buf)).encode('utf-8') + b'\r\n' +
@@ -57,6 +67,14 @@ def raw_stream_gen(id):
             bytes(bytearray(buf)) +
             b'\r\n'
         )
+
+@app.route('/settings')
+def settings_list():
+    return flask.render_template('index.html', cameras=cameras, next_view='settings', title='Camera Settings')
+
+@app.route('/settings/<int:id>')
+def settings(id):
+    return flask.render_template('settings.html', id=id, title='Camera %i' % id)
 
 class ServerThread(threading.Thread):
     daemon = True
