@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import params
 
-def on_frame(image):
+def on_frame(image, camera):
     orig_image = image
     hsvimage = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     
