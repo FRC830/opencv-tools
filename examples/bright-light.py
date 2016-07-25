@@ -2,7 +2,7 @@ import cv2
 
 import params
 
-def on_frame(image):
+def on_frame(image, camera):
     orig_image = image
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image = cv2.GaussianBlur(image, (0, 0), sigmaX=5, sigmaY=5)

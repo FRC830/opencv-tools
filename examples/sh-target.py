@@ -7,7 +7,7 @@ def find_largest_contour(source):
         ordered = sorted(contours, key = cv2.contourArea, reverse = True)[:1]
         return ordered[0]
 
-def on_frame(image):
+def on_frame(image, camera):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     lower_blue = np.array([70,0, 200], dtype=np.uint8)
     upper_blue = np.array([100,100,255], dtype=np.uint8)

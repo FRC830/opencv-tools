@@ -90,7 +90,7 @@ class CaptureThread(threading.Thread):
             if self.image_ok:
                 try:
                     if script.current_script:
-                        image_out = script.current_script.trigger('frame', image)
+                        image_out = script.current_script.trigger('frame', image, self.camera)
                         if isinstance(image_out, type(image)):
                             image = image_out
                 except script.ScriptError as e:
