@@ -3,6 +3,8 @@ import argparse
 import collections
 import cv2
 import flask
+import flask.ext.socketio as socketio
+import gevent
 import numpy
 import random
 import threading
@@ -19,6 +21,7 @@ cameras = {i: fake_camera for i in range(3)}
 app = flask.Flask(__name__)
 app.running = False
 app.config.from_object('config')
+app_socketio = socketio.SocketIO(app)
 
 @app.route('/')
 def index():
@@ -92,7 +95,7 @@ class ServerThread(threading.Thread):
     daemon = True
     def run(self):
         app.running = True
-        app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
+        app_socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False, binary=True)
 
 def main():
     parser = argparse.ArgumentParser()
