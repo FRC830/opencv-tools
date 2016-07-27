@@ -2,9 +2,9 @@ from __future__ import division, print_function, unicode_literals
 import argparse
 import collections
 import cv2
+import eventlet
 import flask
-import flask.ext.socketio as socketio
-import gevent
+import flask_socketio as socketio
 import numpy
 import random
 import threading
@@ -13,6 +13,8 @@ import time
 from camera import Camera, fake_camera
 import params
 import script
+
+eventlet.monkey_patch()
 
 STREAM_FPS = 20
 
@@ -49,32 +51,39 @@ def raw_stream(id, random='unused'):
     # The `random` parameter allows some browsers to make multiple requests to this route at once
     return flask.Response(raw_stream_gen(id), mimetype='multipart/x-mixed-replace; boundary=--frame')
 
+stream_count = 0
+stream_count_lock = threading.Lock()
 # imencode() apparently isn't reentrant
 encode_lock = threading.Lock()
 def raw_stream_gen(id):
-    while app.running:
-        time.sleep(1 / STREAM_FPS)
-        camera = cameras.get(id, fake_camera)
-        if camera.image is not None:
-            img = camera.image
-        else:
-            img = numpy.zeros((camera.height, camera.width, 3), numpy.uint8)
-        img = cv2.resize(img, (int(camera.width * 0.6), int(camera.height * 0.6)))
-        cv2.putText(img, time.strftime('%H:%M:%S'), (5, 20), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
-        if not camera.image_ok:
-            msg = 'Camera not initialized' if camera is fake_camera else 'Camera not returning images'
-            cv2.putText(img, msg, (5, 40), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
-        with encode_lock:
-            pass
-        _, buf = cv2.imencode('.jpeg', img)
-        yield (b'--frame\r\n' +
-            b'Content-Type: image/jpeg\r\n' +
-            b'Content-Length: ' + str(len(buf)).encode('utf-8') + b'\r\n' +
-            b'\r\n' +
-            bytes(bytearray(buf)) +
-            b'\r\n'
-        )
-
+    global stream_count
+    with stream_count_lock:
+        stream_count += 1
+    try:
+        while app.running:
+            time.sleep(1 / STREAM_FPS)
+            camera = cameras.get(id, fake_camera)
+            if camera.image is not None:
+                img = camera.image
+            else:
+                img = numpy.zeros((camera.height, camera.width, 3), numpy.uint8)
+            img = cv2.resize(img, (int(camera.width * 0.6), int(camera.height * 0.6)))
+            cv2.putText(img, time.strftime('%H:%M:%S'), (5, 20), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
+            if not camera.image_ok:
+                msg = 'Camera not initialized' if camera is fake_camera else 'Camera not returning images'
+                cv2.putText(img, msg, (5, 40), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
+            with encode_lock:
+                _, buf = cv2.imencode('.jpeg', img)
+            yield (b'--frame\r\n' +
+                b'Content-Type: image/jpeg\r\n' +
+                b'Content-Length: ' + str(len(buf)).encode('utf-8') + b'\r\n' +
+                b'\r\n' +
+                bytes(bytearray(buf)) +
+                b'\r\n'
+            )
+    finally:
+        with stream_count_lock:
+            stream_count -= 1
 
 @app.route('/settings')
 def settings_list():
@@ -95,7 +104,7 @@ class ServerThread(threading.Thread):
     daemon = True
     def run(self):
         app.running = True
-        app_socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False, binary=True)
+        app_socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -116,6 +125,12 @@ def main():
         pass
     finally:
         app.running = False
+
+    # Wait for streams to shut down, but don't take more than a second
+    max_time = time.time() + 1
+    while stream_count > 0 and time.time() < max_time:
+        time.sleep(0.05)
+
 
 if __name__ == '__main__':
     main()
