@@ -71,7 +71,6 @@ def raw_stream_gen(id):
             b'\r\n'
         )
 
-
 @app.route('/settings')
 def settings_list():
     return flask.render_template('index.html', cameras=cameras, next_view='settings', title='Camera Settings')
