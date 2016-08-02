@@ -1,9 +1,9 @@
 from __future__ import division, print_function, unicode_literals
 import cv2
 import os
+import subprocess
 import threading
 import time
-import subprocess
 
 import script
 
@@ -75,12 +75,12 @@ class CaptureThread(threading.Thread):
 
         #Adjust exposure
         if self.cap.isOpened():#camera id is valid
-            has_exposure_prop = self.cap.get(cv2.cv.CV_CAP_PROP_EXPOSURE)
-            if has_exposure_prop != -1.0:
-                print("Setting exposure for cam %i using opencv" %camera.id)
+            exposure_prop = self.cap.get(cv2.cv.CV_CAP_PROP_EXPOSURE)
+            if exposure_prop != -1.0:
+                print("Setting exposure for cam %i using OpenCV" %camera.id)
                 exposure_set = self.cap.set(cv2.cv.CV_CAP_PROP_EXPOSURE, -10)
             else:
-                print("Unable to set exposure for cam %i with OpenCV -- setting with v412" %camera.id)
+                print("Unable to set exposure for cam %i with OpenCV -- setting with v4l2" %camera.id)
                 subprocess.call(["v4l2-ctl","-d","/dev/video%i"%camera.id,"-c","exposure_auto=1","-c","exposure_absolute=10"])
     def run(self):
         self._running = True
