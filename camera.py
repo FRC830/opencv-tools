@@ -72,6 +72,7 @@ class CaptureThread(threading.Thread):
         self.image_lock = threading.Lock()
         self._image = None
         self.image_ok = False
+        self.script_error = False
 
         #Adjust exposure
         if self.cap.isOpened():#camera id is valid
@@ -104,9 +105,12 @@ class CaptureThread(threading.Thread):
                         if isinstance(image_out, type(image)):
                             image = image_out
                 except script.ScriptError as e:
+                    self.script_error = True
                     import traceback
                     print(e)
                     print(e.traceback)
+                else:
+                    self.script_error = False
                 self.image = image
 
             time.sleep(1 / self.camera.fps)

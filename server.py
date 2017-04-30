@@ -61,6 +61,8 @@ def raw_stream_gen(id):
         if not camera.image_ok:
             msg = 'Camera not initialized' if camera is fake_camera else 'Camera not returning images'
             cv2.putText(img, msg, (5, 40), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
+        if camera.script_error:
+            cv2.putText(img, 'Script error', (5, 40), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
         with encode_lock:
             _, buf = cv2.imencode('.jpeg', img)
         yield (b'--frame\r\n' +
