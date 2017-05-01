@@ -23,7 +23,7 @@ cameras = {i: fake_camera for i in range(3)}
 app = flask.Flask(__name__)
 app.running = False
 app.config.from_object('config')
-app_socketio = socketio.SocketIO(app)
+app_socketio = socketio.SocketIO(app, binary=True)
 
 @app.route('/')
 def index():
@@ -117,10 +117,11 @@ def main():
 
     for i in cameras:
         cameras[i] = Camera(i)
+        cameras[i].start_stream(app_socketio)
 
     try:
         while True:
-            time.sleep(1000)
+            time.sleep(1)
     except KeyboardInterrupt:
         pass
     finally:

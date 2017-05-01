@@ -1,5 +1,6 @@
 from __future__ import division, print_function, unicode_literals
 import cv2
+import numpy
 import os
 import threading
 import time
@@ -17,12 +18,17 @@ class Camera(object):
     def __init__(self, id, fps=20, width=640, height=480):
         self._id = id
         self.cap_thread = CaptureThread(self)
+        self.stream_thread = None
 
         self.fps = fps
         self.width = width
         self.height = height
 
         self.cap_thread.start()
+
+    def start_stream(self, socketio):
+        self.stream_thread = StreamThread(self, socketio)
+        self.stream_thread.start()
 
     @property
     def id(self):
@@ -118,6 +124,37 @@ class CaptureThread(threading.Thread):
     def image(self, image):
         with self.image_lock:
             self._image = image
+
+class StreamThread(threading.Thread):
+    encode_lock = threading.Lock()
+
+    def __init__(self, camera, socketio):
+        super(StreamThread, self).__init__()
+        self.parent_thread = threading.current_thread()
+        self.camera = camera
+        self.socketio = socketio
+
+    def run(self):
+        camera = self.camera
+        while True:
+            time.sleep(1 / self.camera.fps)
+
+            if camera.image is not None:
+                img = camera.image
+            else:
+                img = numpy.zeros((camera.height, camera.width, 3), numpy.uint8)
+            img = cv2.resize(img, (int(camera.width * 0.6), int(camera.height * 0.6)))
+            cv2.putText(img, time.strftime('%H:%M:%S'), (5, 20), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
+            if not camera.image_ok:
+                msg = 'Camera not initialized' if camera is fake_camera else 'Camera not returning images'
+                cv2.putText(img, msg, (5, 40), cv2.cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255))
+            with StreamThread.encode_lock:
+                _, buf = cv2.imencode('.jpeg', img)
+            self.socketio.emit('frame', {'raw': bytes(bytearray(buf))}, namespace='/stream/%i' % camera.id)
+
+            if not self.parent_thread.is_alive():
+                break
+
 
 class _FakeCamera:
     image = None

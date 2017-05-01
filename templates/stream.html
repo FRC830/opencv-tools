@@ -2,7 +2,7 @@
 {% block content %}
 <div class="row">
 <div class="col-lg-4 col-md-4">
-  <img src="{{ url_for('raw_stream', id=id, random=random) }}" style="max-width:100%;">
+  <img id="stream-target" data-ns="{{id}}"/>
 </div>
 <div class="col-lg-8 col-md-8">
   <label for="green">Green</label>
@@ -31,4 +31,6 @@
     <div class="slider-range" id="val" style="width:100%;"></div>
   </div>
 </div>
+<script src="/static/socket.io.min.js"></script>
+<script src="/static/stream.js"></script>
 {% endblock %}
